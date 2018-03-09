@@ -7,6 +7,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.toolbox.StringRequest;
+import com.example.ray.school.connect.ConnManager;
+import com.example.ray.school.connect.HbookConnect;
+import com.example.ray.school.data.DataHandle;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -30,7 +35,7 @@ public class splash extends Activity {
 
         gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
-                .requestIdToken("596099888829-0celjejua0l3khv3c93j6qgo98r7aens.apps.googleusercontent.com")
+                .requestIdToken("596099888829-6vvcos64bnlgs0nrltala1id8g1k40hb.apps.googleusercontent.com")
                 .build();
 
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
@@ -41,7 +46,14 @@ public class splash extends Activity {
             startActivityForResult(signInIntent, RC_SIGN_IN);
         }
         else{
-            login_sucess(account.getEmail(), account.getIdToken());
+            if(DataHandle.check_saved_login(this))
+            {
+                change_activity(account.getEmail());
+            }
+            else{
+                login_sucess(account.getEmail(), account.getIdToken());
+            }
+
         }
     }
 
@@ -74,10 +86,21 @@ public class splash extends Activity {
             Toast.makeText(this, "Login required, failed here code:"+e.getStatusCode(),Toast.LENGTH_LONG).show();
         }
     }
-    void login_sucess(String email,String id){
-        final Intent i = new Intent(this, LandActivity.class);
+    void login_sucess(final String email,final String id){
+        new ConnManager.login(this, id, "http://192.168.43.182:8000/"){
+            @Override
+            public void onResult(String response) {
+                Log.d("HBOOKSCHOOL", response);
+                DataHandle.change_saved_login(splash.this,true);
+                change_activity(email);
+            }
+        };
+
+    }
+    private void change_activity(String email) {
+        final Intent i = new Intent(splash.this, SchoolList.class);
         i.putExtra("email", email);
-        i.putExtra("id",id);
+        //i.putExtra("id",id);
         new Thread(new Runnable() {
             @Override
             public void run() {
